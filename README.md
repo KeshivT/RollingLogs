@@ -1,4 +1,4 @@
-Rolling Logs
+##Rolling Logs
 # About
 Rolling logs is a game in which the player has to dodge logs rolling towards them by strafing left and right or jumping.
 
