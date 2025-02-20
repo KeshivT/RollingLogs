@@ -39,7 +39,7 @@ setInterval(() => {
 
 function updateLogs() {
     logs.forEach((log, index) => {
-        log.position.z += 0.02; // Move towards player
+        log.position.z += 0.03; // Move towards player
         log.rotation.x += 0.1; // Make it roll
         if (log.position.z < -5) {
             scene.remove(log);
@@ -55,7 +55,7 @@ document.addEventListener('keydown', (event) => {
         cube.position.x += 1;
     } else if (event.key === ' ') {
         if (cube.position.y === -2) { // Jump only if on the ground
-            cube.velocity = 0.3;
+            cube.velocity = 0.2;
         }
     }
 });
@@ -64,7 +64,7 @@ document.addEventListener('keydown', (event) => {
 cube.velocity = 0;
 function updatePlayer() {
     if (cube.position.y > -2) {
-        cube.velocity -= 0.01; // Gravity effect
+        cube.velocity -= 0.004; // Gravity effect
     }
     cube.position.y += cube.velocity;
     if (cube.position.y < -2) {
