@@ -75,7 +75,9 @@ const textureLoader = new THREE.TextureLoader();
 const logTexture = textureLoader.load('log_texture.jpg');
 
 function createLog() {
-    const logGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 16);
+    let logSize; 
+    logSize = Math.random() * (7 - 1) + 1
+    const logGeometry = new THREE.CylinderGeometry(0.5, 0.5, logSize, 16);
     const logMaterial = new THREE.MeshStandardMaterial({ map: logTexture });
     const log = new THREE.Mesh(logGeometry, logMaterial);
 
