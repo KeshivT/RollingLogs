@@ -53,11 +53,8 @@ for (let i = -10; i <= 10; i += 3) {
 
 }
 
-
-
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
 
 directionalLight.castShadow = true;
 /*
@@ -65,8 +62,6 @@ cube.castShadow = true;
 cube.receiveShadow = true;
 */
 ground.receiveShadow = true;
-
-
 
 const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
 const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
@@ -93,19 +88,43 @@ function createLog() {
 }
 
 let logs = [];
-setInterval(() => {
-    logs.push(createLog());
-}, 1000);
+
+// Log movement speed
+let logSpeed = 0.03; 
+let speedIncreaseRate = 0.00005; 
+
+// Log spawn rate variables
+let initialSpawnRate = 2000; // Start spawning every 2 seconds
+let minSpawnRate = 500; // Minimum spawn rate (0.5 seconds)
+let spawnRate = initialSpawnRate;
+let spawnRateDecrease = 50;
+let logSpawnInterval; 
+
+function startSpawningLogs() {
+    logSpawnInterval = setTimeout(() => {
+        logs.push(createLog());
+
+        // Gradually increase the spawn rate (decrease interval time)
+        if (spawnRate > minSpawnRate) {
+            spawnRate -= spawnRateDecrease;
+        }
+
+        startSpawningLogs();
+    }, spawnRate);
+}
 
 function updateLogs() {
     logs.forEach((log, index) => {
-        log.position.z += 0.03; // Move towards player
-        log.rotation.x += 0.1; // Make it roll
-        if (log.position.z < -10) {
+        log.position.z += logSpeed;
+        log.rotation.x += logSpeed * 2;
+
+        if (log.position.z > 5) { 
             scene.remove(log);
             logs.splice(index, 1);
         }
     });
+
+    logSpeed += speedIncreaseRate; 
 }
 
 let playerVelocity = new THREE.Vector3(0, 0, 0);
@@ -163,12 +182,20 @@ function resetGame() {
     // Reset player position and velocity
     cube.position.set(0, -2, 0);
     playerVelocity.set(0, 0, 0);
-    playerAcceleration.set(0, 0, 0);
-    
+
+    // Reset log properties
+    logSpeed = 0.03; 
+    spawnRate = initialSpawnRate; 
 
     // Remove all logs
     logs.forEach((log) => scene.remove(log));
     logs = [];
+
+    // Clear previous log spawn interval
+    clearTimeout(logSpawnInterval);
+
+    // Restart spawning logs
+    startSpawningLogs();
 }
 
 function checkCollision() {
@@ -185,7 +212,6 @@ function checkCollision() {
     });
 }
 
-
 function animate() {
     requestAnimationFrame(animate);
     updateLogs();
@@ -195,3 +221,4 @@ function animate() {
 }
 
 animate();
+startSpawningLogs(); // Start log spawning when game begins
