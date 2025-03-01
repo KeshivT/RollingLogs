@@ -179,8 +179,10 @@ function updatePlayer() {
     }
 }
 
-let timeElapsed = 0; // Timer variable
-let timerInterval; 
+let lives = 3; // Number of lives
+let isInvincible = false; // Track grace period
+let timeElapsed = 0;
+let timerInterval;
 
 // Create a timer display and position it at the top-right
 const timerDisplay = document.createElement("div");
@@ -205,6 +207,26 @@ function startTimer() {
     }, 100);
 }
 
+function updateLivesDisplay() {
+    const hearts = document.querySelectorAll(".heart");
+    for (let i = 0; i < hearts.length; i++) {
+        if (i < lives) {
+            hearts[i].style.opacity = "1"; // Show heart
+        } else {
+            hearts[i].style.opacity = "0.2"; // Dim heart when lost
+        }
+    }
+}
+
+function startInvincibility() {
+    isInvincible = true;
+    cube.material.opacity = 0.5; // Make player semi-transparent
+    setTimeout(() => {
+        isInvincible = false;
+        cube.material.opacity = 1; // Reset player visibility
+    }, 1500); // 1.5 sec grace period
+}
+
 function resetGame() {
     // Reset player position and velocity
     cube.position.set(0, -2, 0);
@@ -213,6 +235,8 @@ function resetGame() {
     // Reset log properties
     logSpeed = 0.03; 
     spawnRate = initialSpawnRate; 
+    lives = 3; // Reset lives
+    updateLivesDisplay();
 
     // Remove all logs
     logs.forEach((log) => scene.remove(log));
@@ -229,15 +253,24 @@ function resetGame() {
 }
 
 function checkCollision() {
+    if (isInvincible) return; // If in grace period, ignore collisions
+
     const cubeBox = new THREE.Box3().setFromObject(cube);
 
     logs.forEach((log) => {
         const logBox = new THREE.Box3().setFromObject(log);
 
         if (cubeBox.intersectsBox(logBox)) {
-            console.log("Game Over!");
-            alert(`Game Over! You survived for ${timeElapsed.toFixed(1)} seconds. Press OK to restart.`);
-            resetGame();
+            lives -= 1;
+            updateLivesDisplay();
+
+            if (lives <= 0) {
+                console.log("Game Over!");
+                alert(`Game Over! You survived for ${timeElapsed.toFixed(1)} seconds. Press OK to restart.`);
+                resetGame();
+            } else {
+                startInvincibility(); // Activate grace period
+            }
         }
     });
 }
