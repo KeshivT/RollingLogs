@@ -179,6 +179,31 @@ function updatePlayer() {
     }
 }
 
+let timeElapsed = 0; // Timer variable
+let timerInterval; 
+
+// Create a timer display and position it at the top-right
+const timerDisplay = document.createElement("div");
+timerDisplay.style.position = "absolute";
+timerDisplay.style.top = "10px";
+timerDisplay.style.right = "20px"; // Align to the top-right
+timerDisplay.style.fontSize = "24px";
+timerDisplay.style.fontWeight = "bold";
+timerDisplay.style.color = "white";
+timerDisplay.style.background = "rgba(0, 0, 0, 0.5)"; // Semi-transparent background
+timerDisplay.style.padding = "10px 15px";
+timerDisplay.style.borderRadius = "5px";
+timerDisplay.innerText = "Time: 0s";
+document.body.appendChild(timerDisplay);
+
+function startTimer() {
+    timeElapsed = 0;
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        timeElapsed += 0.1; 
+        timerDisplay.innerText = `Time: ${timeElapsed.toFixed(1)}s`;
+    }, 100);
+}
 
 function resetGame() {
     // Reset player position and velocity
@@ -198,6 +223,9 @@ function resetGame() {
 
     // Restart spawning logs
     startSpawningLogs();
+
+    // Restart the timer
+    startTimer();
 }
 
 function checkCollision() {
@@ -208,7 +236,7 @@ function checkCollision() {
 
         if (cubeBox.intersectsBox(logBox)) {
             console.log("Game Over!");
-            alert("Game Over! Press OK to restart.");
+            alert(`Game Over! You survived for ${timeElapsed.toFixed(1)} seconds. Press OK to restart.`);
             resetGame();
         }
     });
@@ -224,3 +252,5 @@ function animate() {
 
 animate();
 startSpawningLogs(); // Start log spawning when game begins
+startTimer(); // Start the timer when the game begins
+
