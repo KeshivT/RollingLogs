@@ -8,9 +8,6 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// Set camera position
-camera.position.z = 5;
-
 const groundGeometry = new THREE.PlaneGeometry(20, 300);
 const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
 const ground = new THREE.Mesh(groundGeometry, groundMaterial);
@@ -26,7 +23,6 @@ scene.add(ambientLight);
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
 directionalLight.position.set(5, 10, 5);
 scene.add(directionalLight);
-
 
 function createTree(x, z) {
     const trunkGeometry = new THREE.CylinderGeometry(0.3, 0.3, 2);
@@ -70,6 +66,24 @@ scene.add(cube);
 
 // Position the cube
 cube.position.y = -2; // Set ground level
+
+let isFirstPerson = false; // Track the camera mode
+
+camera.position.set(0, -2, 0);
+
+function toggleCamera() {
+    isFirstPerson = !isFirstPerson;
+
+    if (isFirstPerson) {
+        // First-Person View: Camera follows the player
+        camera.position.set(cube.position.x, cube.position.y + 0.8, cube.position.z);
+        camera.lookAt(cube.position.x, cube.position.y + 0.8, cube.position.z - 5);
+    } else {
+        // Third-Person View: Fixed camera position
+        camera.position.set(0, 8, 10);  // High and behind the scene
+        camera.lookAt(0, 0, 0);  // Look at the center of the world
+    }
+}
 
 const textureLoader = new THREE.TextureLoader();
 const logTexture = textureLoader.load('log_texture.jpg');
@@ -144,6 +158,12 @@ document.addEventListener('keyup', (event) => {
     keys[event.key] = false;
 });
 
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Shift') {
+        toggleCamera();
+    }
+});
+
 
 function updatePlayer() {
     if (keys['ArrowLeft']) {
@@ -177,6 +197,7 @@ function updatePlayer() {
     if (cube.position.x > 8) { 
         cube.position.x = -8;
     }
+
 }
 
 let lives = 3; // Number of lives
@@ -280,6 +301,17 @@ function animate() {
     updateLogs();
     updatePlayer();
     checkCollision();
+
+    if (isFirstPerson) {
+        // First-person: Keep camera inside player, looking forward
+        camera.position.set(cube.position.x, cube.position.y, cube.position.z);
+        camera.lookAt(cube.position.x, cube.position.y + 0.8, cube.position.z - 5); 
+    } else {
+        // Third-person: Keep camera behind and above the player
+        camera.position.set(cube.position.x, cube.position.y + 1.5, cube.position.z + 4);
+        camera.lookAt(cube.position.x, cube.position.y + 1, cube.position.z);
+    }
+
     renderer.render(scene, camera);
 }
 
