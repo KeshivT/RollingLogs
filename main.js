@@ -100,7 +100,7 @@ function createLog() {
     const logGeometry = new THREE.CylinderGeometry(0.5, 0.5, logSize, 16);
     const logMaterial = new THREE.MeshStandardMaterial({ map: logTexture });
     const log = new THREE.Mesh(logGeometry, logMaterial);
-    log.position.set(Math.random() * 20 - 10, -2, -10);
+    log.position.set(Math.random() * 20 - 10, -2, -8);
     log.rotation.z = Math.PI / 2;
     log.castShadow = true;
     log.receiveShadow = true;
@@ -149,6 +149,38 @@ function updateLogs() {
     logSpeed += speedIncreaseRate; 
 }
 
+function createDustEffectJump() {
+    const dustGeometry = new THREE.SphereGeometry(0.2);
+    const dustMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.5 });
+    const dust = new THREE.Mesh(dustGeometry, dustMaterial);
+    
+    dust.position.set(cube.position.x, cube.position.y - 0.5, cube.position.z);
+    scene.add(dust);
+
+    setTimeout(() => scene.remove(dust), 500); // Remove after 0.5 sec
+}
+
+let lastDustTime = 0; 
+const dustInterval = 500; 
+
+function createDustEffect() {
+    const currentTime = Date.now();
+    
+    if (currentTime - lastDustTime < dustInterval) return; // Only spawn dust every second
+
+    lastDustTime = currentTime; // Update last spawn time
+
+    const dustGeometry = new THREE.SphereGeometry(0.2);
+    const dustMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.5 });
+    const dust = new THREE.Mesh(dustGeometry, dustMaterial);
+    
+    dust.position.set(cube.position.x, cube.position.y - 0.5, cube.position.z);
+    scene.add(dust);
+
+    setTimeout(() => scene.remove(dust), 500);
+}
+
+
 let playerVelocity = new THREE.Vector3(0, 0, 0);
 let playerAcceleration = 0.005;
 let friction = 0.005;
@@ -174,13 +206,16 @@ document.addEventListener('keydown', (event) => {
 function updatePlayer() {
     if (keys['ArrowLeft']) {
         playerVelocity.x = Math.max(playerVelocity.x - playerAcceleration, -maxSpeed);
+        if(cube.position.y === -2) createDustEffect(); 
     }
     if (keys['ArrowRight']) {
         playerVelocity.x = Math.min(playerVelocity.x + playerAcceleration, maxSpeed);
+        if(cube.position.y === -2) createDustEffect(); 
     }
 
     if (keys[' '] && cube.position.y === -2) {
-        playerVelocity.y = 0.2;
+        playerVelocity.y = 0.13;
+        createDustEffectJump(); 
     }
 
     playerVelocity.y -= 0.0035;
@@ -358,7 +393,7 @@ function checkCollision() {
                 alert(`Game Over! You survived for ${timeElapsed.toFixed(1)} seconds. Press OK to restart.`);
                 resetGame();
             } else {
-                startInvincibility(); // Activate grace period
+                startInvincibility(); 
             }
         }
     });
