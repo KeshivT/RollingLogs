@@ -13,6 +13,7 @@ const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
 const ground = new THREE.Mesh(groundGeometry, groundMaterial);
 ground.rotation.x = -Math.PI / 2;
 ground.position.y = -2.5;
+ground.receiveShadow = true;
 scene.add(ground);
 
 scene.background = new THREE.Color(0x87CEEB); // Sky blue
@@ -29,11 +30,15 @@ function createTree(x, z) {
     const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
     const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
     trunk.position.set(x, -1.5, z);
+    trunk.castShadow = true;
+    trunk.receiveShadow = true;
 
     const leavesGeometry = new THREE.SphereGeometry(1);
     const leavesMaterial = new THREE.MeshStandardMaterial({ color: 0x2E8B57 });
     const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
     leaves.position.set(x, 0, z);
+    leaves.castShadow = true;
+    leaves.receiveShadow = true;
 
     scene.add(trunk);
     scene.add(leaves);
@@ -60,8 +65,10 @@ cube.receiveShadow = true;
 ground.receiveShadow = true;
 
 const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
-const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+const cubeMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
 const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+cube.castShadow = true;
+cube.receiveShadow = true;
 scene.add(cube);
 
 // Position the cube
@@ -89,15 +96,14 @@ const textureLoader = new THREE.TextureLoader();
 const logTexture = textureLoader.load('log_texture.jpg');
 
 function createLog() {
-    let logSize; 
-    logSize = Math.random() * (7 - 1) + 1
+    let logSize = Math.random() * (7 - 1) + 1;
     const logGeometry = new THREE.CylinderGeometry(0.5, 0.5, logSize, 16);
     const logMaterial = new THREE.MeshStandardMaterial({ map: logTexture });
     const log = new THREE.Mesh(logGeometry, logMaterial);
-
-    // Position the log above the player and move towards them
-    log.position.set(Math.random() * 20 - 10, -2, -10); // Random x position
-    log.rotation.z = Math.PI / 2; // Lay it sideways
+    log.position.set(Math.random() * 20 - 10, -2, -10);
+    log.rotation.z = Math.PI / 2;
+    log.castShadow = true;
+    log.receiveShadow = true;
 
     scene.add(log);
     return log;
@@ -248,6 +254,68 @@ function startInvincibility() {
     }, 1500); // 1.5 sec grace period
 }
 
+// Add Sun and Moon
+const sunLight = new THREE.DirectionalLight(0xffffff, 1);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 2048;
+sunLight.shadow.mapSize.height = 2048;
+sunLight.shadow.camera.near = 0.5;
+sunLight.shadow.camera.far = 50;
+sunLight.shadow.camera.left = -20;
+sunLight.shadow.camera.right = 20;
+sunLight.shadow.camera.top = 20;
+sunLight.shadow.camera.bottom = -20;
+scene.add(sunLight);
+
+const sunGeometry = new THREE.SphereGeometry(2);
+const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+scene.add(sun);
+
+const moonGeometry = new THREE.SphereGeometry(1.5);
+const moonMaterial = new THREE.MeshBasicMaterial({ color: 0xbbbbbb });
+const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+scene.add(moon);
+
+let timeOfDay = 0; 
+const cycleSpeed = 0.002; 
+
+function updateDayNightCycle() {
+    timeOfDay += cycleSpeed;
+    if (timeOfDay > Math.PI * 2) timeOfDay = 0;
+    
+    // Calculate Sun & Moon positions
+    const sunX = Math.cos(timeOfDay) * 30;
+    const sunY = Math.sin(timeOfDay) * 30;
+    
+    sun.position.set(sunX, sunY, -20);
+    sunLight.position.set(sunX, sunY, -10);
+    sunLight.target.position.set(0, 0, 0);
+    sunLight.target.updateMatrixWorld();
+    
+    // Moon is opposite to the Sun
+    const moonX = -sunX;
+    const moonY = -sunY;
+    moon.position.set(moonX, moonY, -20);
+    
+    // Adjust light intensity and color
+    let intensity = Math.max(0.1, Math.sin(timeOfDay)); // Brighter during the day
+    sunLight.intensity = intensity * 1.5;
+    sunLight.color.setHSL(0.1, 0.5, 0.5 + intensity * 0.5);
+    
+    // Adjust sky color
+    let skyFactor = (Math.sin(timeOfDay) + 1) / 2; // Normalized 0 to 1
+    let skyColor = new THREE.Color().lerpColors(new THREE.Color(0x001848), new THREE.Color(0x87CEEB), skyFactor);
+    scene.background = skyColor;
+    
+    // Adjust shadows (strong during the day, softer at night)
+    sunLight.shadow.darkness = intensity;
+    
+    // Reduce visibility at night
+    let visibilityFactor = Math.max(0.5, intensity); // Min 50% visibility at night
+    renderer.toneMappingExposure = visibilityFactor;
+}
+
 function resetGame() {
     // Reset player position and velocity
     cube.position.set(0, -2, 0);
@@ -298,6 +366,7 @@ function checkCollision() {
 
 function animate() {
     requestAnimationFrame(animate);
+    updateDayNightCycle();
     updateLogs();
     updatePlayer();
     checkCollision();
