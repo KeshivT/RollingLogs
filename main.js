@@ -202,6 +202,8 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
+let defaultJumpPower = 0.13; // Store default jump height
+let boostedJumpPower = 0.2;  // Boosted jump height
 
 function updatePlayer() {
     if (keys['ArrowLeft']) {
@@ -214,7 +216,7 @@ function updatePlayer() {
     }
 
     if (keys[' '] && cube.position.y === -2) {
-        playerVelocity.y = 0.13;
+        playerVelocity.y = defaultJumpPower;
         createDustEffectJump(); 
     }
 
@@ -351,6 +353,113 @@ function updateDayNightCycle() {
     renderer.toneMappingExposure = visibilityFactor;
 }
 
+// Create a power-up display text element
+const powerUpDisplay = document.createElement("div");
+powerUpDisplay.style.position = "absolute";
+powerUpDisplay.style.top = "50px"; 
+powerUpDisplay.style.left = "50%";
+powerUpDisplay.style.transform = "translateX(-50%)"; // Center align
+powerUpDisplay.style.fontSize = "50px";
+powerUpDisplay.style.fontWeight = "bold";
+powerUpDisplay.style.color = "white";
+powerUpDisplay.style.background = "rgba(0, 0, 0, 0.5)"; // Semi-transparent background
+powerUpDisplay.style.padding = "10px 15px";
+powerUpDisplay.style.borderRadius = "5px";
+powerUpDisplay.style.display = "none"; // Hidden by default
+document.body.appendChild(powerUpDisplay);
+
+function createPowerUp() {
+    const powerUpGeometry = new THREE.SphereGeometry(0.5);
+    const powerUpMaterial = new THREE.MeshStandardMaterial({ color:0x7e017e });
+    const powerUp = new THREE.Mesh(powerUpGeometry, powerUpMaterial);
+    
+    powerUp.position.set(Math.random() * 16 - 8, -1.8, 0);
+    powerUp.castShadow = true;
+    scene.add(powerUp);
+
+    return powerUp;
+}
+
+let powerUps = [];
+
+function spawnPowerUps() {
+    setInterval(() => {
+        if (powerUps.length < 3) {  // Limit active power-ups
+            let newPowerUp = createPowerUp();
+            powerUps.push(newPowerUp);
+
+            // Remove power-up after 2 seconds if not collected
+            setTimeout(() => {
+                scene.remove(newPowerUp);
+                powerUps = powerUps.filter(p => p !== newPowerUp);
+            }, 2000);
+        }
+    }, 3000); 
+}
+
+function checkPowerUpCollision() {
+    const cubeBox = new THREE.Box3().setFromObject(cube);
+
+    powerUps.forEach((powerUp, index) => {
+        const powerUpBox = new THREE.Box3().setFromObject(powerUp);
+
+        if (cubeBox.intersectsBox(powerUpBox)) {
+            applyPowerUpEffect();
+            scene.remove(powerUp);
+            powerUps.splice(index, 1);
+        }
+    });
+}
+
+function applyPowerUpEffect() {
+    let effectType = Math.floor(Math.random() * 3); // Choose random power-up type
+    let powerUpText = ""; // Text to display
+
+    if (effectType === 0) {
+        powerUpText = "🏃‍♂️💨";
+        maxSpeed *= 1.3;
+        setTimeout(() => { 
+            maxSpeed /= 1.3; 
+            hidePowerUpText();
+        }, 5000);
+    } 
+    
+    else if (effectType === 1) {
+        powerUpText = "🛡️";
+        isInvincible = true;
+        cube.material.opacity = 0.5; // Visual feedback
+        setTimeout(() => { 
+            isInvincible = false;
+            cube.material.opacity = 1;
+            hidePowerUpText();
+        }, 5000);
+    } 
+    
+    else if (effectType === 2) {
+        powerUpText = "⬆️";
+        defaultJumpPower = boostedJumpPower; // Temporarily increase jump power
+        setTimeout(() => { 
+            defaultJumpPower = 0.13; // Reset jump height after 5 sec
+            hidePowerUpText();
+        }, 5000);
+    }
+
+    // Show the power-up text
+    showPowerUpText(powerUpText);
+}
+
+// Function to show the power-up text
+function showPowerUpText(text) {
+    powerUpDisplay.innerText = text;
+    powerUpDisplay.style.display = "block"; // Show text
+}
+
+// Function to hide the power-up text
+function hidePowerUpText() {
+    powerUpDisplay.style.display = "none"; // Hide text
+}
+
+
 function resetGame() {
     // Reset player position and velocity
     cube.position.set(0, -2, 0);
@@ -405,6 +514,7 @@ function animate() {
     updateLogs();
     updatePlayer();
     checkCollision();
+    checkPowerUpCollision();
 
     if (isFirstPerson) {
         // First-person: Keep camera inside player, looking forward
@@ -422,4 +532,4 @@ function animate() {
 animate();
 startSpawningLogs(); // Start log spawning when game begins
 startTimer(); // Start the timer when the game begins
-
+spawnPowerUps(); //start spawing the powerups 
