@@ -105,9 +105,18 @@ function createLog() {
     log.castShadow = true;
     log.receiveShadow = true;
 
+    // 35% chance to apply wobble
+    log.isWobbling = Math.random() < 0.35;  
+    if (log.isWobbling) {
+        log.wobbleOffset = Math.random() * Math.PI * 2; // Unique offset for independent motion
+        log.wobbleIntensity = Math.random() * 0.3 + 0.2; // Subtle wobble (0.2 to 0.5)
+        log.wobbleSpeed = Math.random() * 1 + 0.5; // Slow and smooth movement (0.5 to 1.5)
+    }    
+
     scene.add(log);
     return log;
 }
+
 
 let logs = [];
 
@@ -140,6 +149,15 @@ function updateLogs() {
         log.position.z += logSpeed;
         log.rotation.x += logSpeed * 2;
 
+        // Apply subtle wobble if the log was marked to wobble
+        if (log.isWobbling) {
+            let wobbleAmount = Math.sin(log.position.z * log.wobbleSpeed + log.wobbleOffset) * log.wobbleIntensity;
+            
+            // Keep logs close to the ground without going under -2
+            log.position.y = -2 + Math.abs(wobbleAmount * 0.8); // Slight bounce effect
+        }
+
+        // Remove logs that pass a certain point
         if (log.position.z > 5) { 
             scene.remove(log);
             logs.splice(index, 1);
@@ -148,6 +166,7 @@ function updateLogs() {
 
     logSpeed += speedIncreaseRate; 
 }
+
 
 function createDustEffectJump() {
     const dustGeometry = new THREE.SphereGeometry(0.2);
@@ -388,13 +407,13 @@ function spawnPowerUps() {
             let newPowerUp = createPowerUp();
             powerUps.push(newPowerUp);
 
-            // Remove power-up after 2 seconds if not collected
+            // Remove power-up after 3 seconds if not collected
             setTimeout(() => {
                 scene.remove(newPowerUp);
                 powerUps = powerUps.filter(p => p !== newPowerUp);
-            }, 2000);
+            }, 3000);
         }
-    }, 3000); 
+    }, 10000); 
 }
 
 function checkPowerUpCollision() {
