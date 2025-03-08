@@ -478,6 +478,13 @@ function hidePowerUpText() {
     powerUpDisplay.style.display = "none"; // Hide text
 }
 
+function resetPowerUps() {
+    maxSpeed = 0.05; // Reset speed boost
+    defaultJumpPower = 0.13; // Reset jump boost
+    isInvincible = false; // Remove shield effect
+    cube.material.opacity = 1; // Reset player visibility
+    hidePowerUpText(); // Hide the power-up text display
+}
 
 function resetGame() {
     // Reset player position and velocity
@@ -489,6 +496,9 @@ function resetGame() {
     spawnRate = initialSpawnRate; 
     lives = 3; // Reset lives
     updateLivesDisplay();
+
+     // Reset all active power-ups
+    resetPowerUps();
 
     // Remove all logs
     logs.forEach((log) => scene.remove(log));
