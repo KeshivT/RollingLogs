@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 
 // Scene, Camera, Renderer
 const scene = new THREE.Scene();
@@ -69,7 +71,7 @@ const cubeMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
 const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
 cube.castShadow = true;
 cube.receiveShadow = true;
-scene.add(cube);
+// scene.add(cube);
 
 // Position the cube
 cube.position.y = -2; // Set ground level
@@ -81,10 +83,20 @@ camera.position.set(0, -2, 0);
 function toggleCamera() {
     isFirstPerson = !isFirstPerson;
 
+    // if (isFirstPerson) {
+    //     // First-Person View: Camera follows the player
+    //     camera.position.set(cube.position.x, cube.position.y + 0.8, cube.position.z);
+    //     camera.lookAt(cube.position.x, cube.position.y + 0.8, cube.position.z - 5);
+    // } else {
+    //     // Third-Person View: Fixed camera position
+    //     camera.position.set(0, 8, 10);  // High and behind the scene
+    //     camera.lookAt(0, 0, 0);  // Look at the center of the world
+    // }
+
     if (isFirstPerson) {
-        // First-Person View: Camera follows the player
-        camera.position.set(cube.position.x, cube.position.y + 0.8, cube.position.z);
-        camera.lookAt(cube.position.x, cube.position.y + 0.8, cube.position.z - 5);
+        // First-person: Keep camera inside frog, looking forward
+        camera.position.set(frog.position.x, frog.position.y + 0.8, frog.position.z);
+        camera.lookAt(frog.position.x, frog.position.y + 0.8, frog.position.z - 5);
     } else {
         // Third-Person View: Fixed camera position
         camera.position.set(0, 8, 10);  // High and behind the scene
@@ -93,6 +105,49 @@ function toggleCamera() {
 }
 
 const textureLoader = new THREE.TextureLoader();
+
+// Variable to store the loaded model
+let frog = null;
+
+// Load the MTL file (materials)
+const mtlLoader = new MTLLoader();
+mtlLoader.load('Tree_frog.mtl', (materials) => {
+    console.log('MTL file loaded successfully');
+    materials.preload();
+
+    // Load the OBJ file with the materials
+    const objLoader = new OBJLoader();
+    objLoader.setMaterials(materials);
+    objLoader.load('Tree_frog.obj', (object) => {
+        console.log('OBJ file loaded successfully');
+        frog = object;  // Store the object in the variable
+        console.log('Frog object:', frog);  
+
+        // Traverse through the group to find the meshes
+        frog.traverse((child) => {
+            if (child.isMesh) {
+                console.log('Found mesh:', child);
+
+                // Now apply the transformations to the mesh
+                frog.scale.set(0.3, 0.3, 0.3);
+                frog.position.set(0, -2, 0);
+                frog.rotation.set(0, 2, 0);
+
+                // Enable shadows for the mesh
+                child.castShadow = true;
+                child.receiveShadow = true;
+
+                // Apply opacity if the material exists
+                if (child.material) {
+                    child.material.opacity = 1;
+                }
+                // You can also set material properties here if needed
+            }
+        });
+        scene.add(frog);
+    });
+});
+
 const logTexture = textureLoader.load('log_texture.jpg');
 
 function createLog() {
@@ -105,9 +160,18 @@ function createLog() {
     log.castShadow = true;
     log.receiveShadow = true;
 
+    // 35% chance to apply wobble
+    log.isWobbling = Math.random() < 0.35;  
+    if (log.isWobbling) {
+        log.wobbleOffset = Math.random() * Math.PI * 2; // Unique offset for independent motion
+        log.wobbleIntensity = Math.random() * 0.3 + 0.2; // Subtle wobble (0.2 to 0.5)
+        log.wobbleSpeed = Math.random() * 1 + 0.5; // Slow and smooth movement (0.5 to 1.5)
+    }    
+
     scene.add(log);
     return log;
 }
+
 
 let logs = [];
 
@@ -140,6 +204,15 @@ function updateLogs() {
         log.position.z += logSpeed;
         log.rotation.x += logSpeed * 2;
 
+        // Apply subtle wobble if the log was marked to wobble
+        if (log.isWobbling) {
+            let wobbleAmount = Math.sin(log.position.z * log.wobbleSpeed + log.wobbleOffset) * log.wobbleIntensity;
+            
+            // Keep logs close to the ground without going under -2
+            log.position.y = -2 + Math.abs(wobbleAmount * 0.8); // Slight bounce effect
+        }
+
+        // Remove logs that pass a certain point
         if (log.position.z > 5) { 
             scene.remove(log);
             logs.splice(index, 1);
@@ -149,12 +222,14 @@ function updateLogs() {
     logSpeed += speedIncreaseRate; 
 }
 
+
 function createDustEffectJump() {
     const dustGeometry = new THREE.SphereGeometry(0.2);
     const dustMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.5 });
     const dust = new THREE.Mesh(dustGeometry, dustMaterial);
     
-    dust.position.set(cube.position.x, cube.position.y - 0.5, cube.position.z);
+    // dust.position.set(cube.position.x, cube.position.y - 0.5, cube.position.z);
+    dust.position.set(frog.position.x, frog.position.y - 0.5, frog.position.z);
     scene.add(dust);
 
     setTimeout(() => scene.remove(dust), 500); // Remove after 0.5 sec
@@ -174,7 +249,8 @@ function createDustEffect() {
     const dustMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.5 });
     const dust = new THREE.Mesh(dustGeometry, dustMaterial);
     
-    dust.position.set(cube.position.x, cube.position.y - 0.5, cube.position.z);
+    // dust.position.set(cube.position.x, cube.position.y - 0.5, cube.position.z);
+    dust.position.set(frog.position.x, frog.position.y - 0.5, frog.position.z);
     scene.add(dust);
 
     setTimeout(() => scene.remove(dust), 500);
@@ -202,6 +278,8 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
+let defaultJumpPower = 0.13; // Store default jump height
+let boostedJumpPower = 0.2;  // Boosted jump height
 
 function updatePlayer() {
     if (keys['ArrowLeft']) {
@@ -213,8 +291,13 @@ function updatePlayer() {
         if(cube.position.y === -2) createDustEffect(); 
     }
 
-    if (keys[' '] && cube.position.y === -2) {
-        playerVelocity.y = 0.13;
+    // if (keys[' '] && cube.position.y === -2) {
+    //     playerVelocity.y = defaultJumpPower;
+    //     createDustEffectJump(); 
+    // }
+
+    if (keys[' '] && frog.position.y === -2) {
+        playerVelocity.y = defaultJumpPower;
         createDustEffectJump(); 
     }
 
@@ -224,21 +307,37 @@ function updatePlayer() {
         playerVelocity.x *= 1 - friction;
     }
 
-    cube.position.add(playerVelocity);
+    // cube.position.add(playerVelocity);
 
-    if (cube.position.y < -2) {
-        cube.position.y = -2;
-        playerVelocity.y = 0;
+    // if (cube.position.y < -2) {
+    //     cube.position.y = -2;
+    //     playerVelocity.y = 0;
+    // }
+
+    // if (cube.position.x < -8) { 
+    //     cube.position.x = 8;
+    // }
+
+    // if (cube.position.x > 8) { 
+    //     cube.position.x = -8;
+    // }
+
+    if(frog){
+        frog.position.add(playerVelocity);
+
+        if (frog.position.y < -2) {
+            frog.position.y = -2;
+            playerVelocity.y = 0;
+        }
+
+        if (frog.position.x < -8) { 
+            cube.position.x = 8;
+        }
+
+        if (frog.position.x > 8) { 
+            cube.position.x = -8;
+        }
     }
-
-    if (cube.position.x < -8) { 
-        cube.position.x = 8;
-    }
-
-    if (cube.position.x > 8) { 
-        cube.position.x = -8;
-    }
-
 }
 
 let lives = 3; // Number of lives
@@ -281,12 +380,40 @@ function updateLivesDisplay() {
 }
 
 function startInvincibility() {
-    isInvincible = true;
-    cube.material.opacity = 0.5; // Make player semi-transparent
-    setTimeout(() => {
-        isInvincible = false;
-        cube.material.opacity = 1; // Reset player visibility
-    }, 1500); // 1.5 sec grace period
+    // isInvincible = true;
+    // cube.material.opacity = 0.5; // Make player semi-transparent
+    // setTimeout(() => {
+    //     isInvincible = false;
+    //     cube.material.opacity = 1; // Reset player visibility
+    // }, 1500); // 1.5 sec grace period
+
+    if (frog) {
+        isInvincible = true;
+    
+        // Traverse through the frog group to find each child mesh
+        frog.traverse((child) => {
+            if (child.isMesh) {
+                // Set the opacity for each mesh inside the frog group
+                if (child.material) {
+                    child.material.opacity = 0.5; // Make player semi-transparent
+                }
+            }
+        });
+    
+        // After 1.5 seconds, reset the opacity and invincibility state
+        setTimeout(() => {
+            isInvincible = false;
+    
+            // Reset the opacity for each mesh in the frog group
+            frog.traverse((child) => {
+                if (child.isMesh) {
+                    if (child.material) {
+                        child.material.opacity = 1; // Reset opacity to fully visible
+                    }
+                }
+            });
+        }, 1500); // 1.5 sec grace period
+    }
 }
 
 // Add Sun and Moon
@@ -351,9 +478,143 @@ function updateDayNightCycle() {
     renderer.toneMappingExposure = visibilityFactor;
 }
 
+// Create a power-up display text element
+const powerUpDisplay = document.createElement("div");
+powerUpDisplay.style.position = "absolute";
+powerUpDisplay.style.top = "50px"; 
+powerUpDisplay.style.left = "50%";
+powerUpDisplay.style.transform = "translateX(-50%)"; // Center align
+powerUpDisplay.style.fontSize = "50px";
+powerUpDisplay.style.fontWeight = "bold";
+powerUpDisplay.style.color = "white";
+powerUpDisplay.style.background = "rgba(0, 0, 0, 0.5)"; // Semi-transparent background
+powerUpDisplay.style.padding = "10px 15px";
+powerUpDisplay.style.borderRadius = "5px";
+powerUpDisplay.style.display = "none"; // Hidden by default
+document.body.appendChild(powerUpDisplay);
+
+function createPowerUp() {
+    const powerUpGeometry = new THREE.SphereGeometry(0.5);
+    const powerUpMaterial = new THREE.MeshStandardMaterial({ color:0x7e017e });
+    const powerUp = new THREE.Mesh(powerUpGeometry, powerUpMaterial);
+    
+    powerUp.position.set(Math.random() * 16 - 8, -1.8, 0);
+    powerUp.castShadow = true;
+    scene.add(powerUp);
+
+    return powerUp;
+}
+
+let powerUps = [];
+
+function spawnPowerUps() {
+    setInterval(() => {
+        if (powerUps.length < 3) {  // Limit active power-ups
+            let newPowerUp = createPowerUp();
+            powerUps.push(newPowerUp);
+
+            // Remove power-up after 3 seconds if not collected
+            setTimeout(() => {
+                scene.remove(newPowerUp);
+                powerUps = powerUps.filter(p => p !== newPowerUp);
+            }, 3000);
+        }
+    }, 10000); 
+}
+
+function checkPowerUpCollision() {
+    // const cubeBox = new THREE.Box3().setFromObject(cube);
+
+    // powerUps.forEach((powerUp, index) => {
+    //     const powerUpBox = new THREE.Box3().setFromObject(powerUp);
+
+    //     if (cubeBox.intersectsBox(powerUpBox)) {
+    //         applyPowerUpEffect();
+    //         scene.remove(powerUp);
+    //         powerUps.splice(index, 1);
+    //     }
+    // });
+
+    if (frog) {
+        // Create a bounding box for the entire frog group
+        const frogBox = new THREE.Box3().setFromObject(frog);  // Bounding box around the frog group
+
+        // Get the center and size of the box
+        const center = frogBox.getCenter(new THREE.Vector3());
+        const frogSphere = new THREE.Sphere(center, 0.4);
+
+        powerUps.forEach((powerUp, index) => {
+            const powerUpBox = new THREE.Box3().setFromObject(powerUp);
+    
+            if (frogSphere.intersectsBox(powerUpBox)) {
+                applyPowerUpEffect();
+                scene.remove(powerUp);
+                powerUps.splice(index, 1);
+            }
+        });
+    }
+}
+
+function applyPowerUpEffect() {
+    let effectType = Math.floor(Math.random() * 3); // Choose random power-up type
+    let powerUpText = ""; // Text to display
+
+    if (effectType === 0) {
+        powerUpText = "🏃‍♂️💨";
+        maxSpeed *= 1.3;
+        setTimeout(() => { 
+            maxSpeed /= 1.3; 
+            hidePowerUpText();
+        }, 5000);
+    } 
+    
+    else if (effectType === 1) {
+        powerUpText = "🛡️";
+        isInvincible = true;
+        cube.material.opacity = 0.5; // Visual feedback
+        setTimeout(() => { 
+            isInvincible = false;
+            cube.material.opacity = 1;
+            hidePowerUpText();
+        }, 5000);
+    } 
+    
+    else if (effectType === 2) {
+        powerUpText = "⬆️";
+        defaultJumpPower = boostedJumpPower; // Temporarily increase jump power
+        setTimeout(() => { 
+            defaultJumpPower = 0.13; // Reset jump height after 5 sec
+            hidePowerUpText();
+        }, 5000);
+    }
+
+    // Show the power-up text
+    showPowerUpText(powerUpText);
+}
+
+// Function to show the power-up text
+function showPowerUpText(text) {
+    powerUpDisplay.innerText = text;
+    powerUpDisplay.style.display = "block"; // Show text
+}
+
+// Function to hide the power-up text
+function hidePowerUpText() {
+    powerUpDisplay.style.display = "none"; // Hide text
+}
+
+function resetPowerUps() {
+    maxSpeed = 0.05; // Reset speed boost
+    defaultJumpPower = 0.13; // Reset jump boost
+    isInvincible = false; // Remove shield effect
+    cube.material.opacity = 1; // Reset player visibility
+    hidePowerUpText(); // Hide the power-up text display
+}
+
 function resetGame() {
     // Reset player position and velocity
-    cube.position.set(0, -2, 0);
+    // cube.position.set(0, -2, 0);
+    frog.position.set(0, -2, 0);
     playerVelocity.set(0, 0, 0);
 
     // Reset log properties
@@ -361,6 +622,9 @@ function resetGame() {
     spawnRate = initialSpawnRate; 
     lives = 3; // Reset lives
     updateLivesDisplay();
+
+     // Reset all active power-ups
+    resetPowerUps();
 
     // Remove all logs
     logs.forEach((log) => scene.remove(log));
@@ -379,25 +643,72 @@ function resetGame() {
 function checkCollision() {
     if (isInvincible) return; // If in grace period, ignore collisions
 
-    const cubeBox = new THREE.Box3().setFromObject(cube);
+    if (frog) {
+        // Create a bounding box for the entire frog group
+        const frogBox = new THREE.Box3().setFromObject(frog);  // Bounding box around the frog group
 
-    logs.forEach((log) => {
-        const logBox = new THREE.Box3().setFromObject(log);
+        // Get the center and size of the box
+        const center = frogBox.getCenter(new THREE.Vector3());
+        const frogSphere = new THREE.Sphere(center, 0.4);
 
-        if (cubeBox.intersectsBox(logBox)) {
-            lives -= 1;
-            updateLivesDisplay();
+        // // Create a wireframe cube at the center of the frog's bounding box
+        // const geometry = new THREE.SphereGeometry(0.4, 32, 32);  // Cube size based on frog's bounding box
+        // const material = new THREE.LineBasicMaterial({ color: 0xffff00 });  // Yellow wireframe color
+        // const wireframe = new THREE.LineSegments(new THREE.WireframeGeometry(geometry), material);
 
-            if (lives <= 0) {
-                console.log("Game Over!");
-                alert(`Game Over! You survived for ${timeElapsed.toFixed(1)} seconds. Press OK to restart.`);
-                resetGame();
-            } else {
-                startInvincibility(); 
+        // // Position the wireframe sphere at the center of the frog
+        // wireframe.position.set(center.x, center.y, center.z);
+
+        // // Add the wireframe to the scene
+        // scene.add(wireframe);
+
+        // // Optional: Remove the wireframe after a short duration for debugging purposes
+        // setTimeout(() => {
+        //     scene.remove(wireframe);
+        // }, 1000);  // Remove wireframe after 1 second
+
+        // Check for collisions with logs
+        logs.forEach((log) => {
+            const logBox = new THREE.Box3().setFromObject(log);  // Get bounding box for the log
+
+            if (frogSphere.intersectsBox(logBox)) {  // Check for collision between frog and log
+                lives -= 1;
+                updateLivesDisplay();
+
+                if (lives <= 0) {
+                    console.log("Game Over!");
+                    alert(`Game Over! You survived for ${timeElapsed.toFixed(1)} seconds. Press OK to restart.`);
+                    resetGame();
+                } else {
+                    startInvincibility();  // Trigger invincibility period
+                }
             }
-        }
-    });
+        });
+    }
 }
+
+// function checkCollision() {
+//     if (isInvincible) return; // If in grace period, ignore collisions
+
+//     const cubeBox = new THREE.Box3().setFromObject(cube);
+
+//     logs.forEach((log) => {
+//         const logBox = new THREE.Box3().setFromObject(log);
+
+//         if (cubeBox.intersectsBox(logBox)) {
+//             lives -= 1;
+//             updateLivesDisplay();
+
+//             if (lives <= 0) {
+//                 console.log("Game Over!");
+//                 alert(`Game Over! You survived for ${timeElapsed.toFixed(1)} seconds. Press OK to restart.`);
+//                 resetGame();
+//             } else {
+//                 startInvincibility(); 
+//             }
+//         }
+//     });
+// }
 
 function animate() {
     requestAnimationFrame(animate);
@@ -405,15 +716,30 @@ function animate() {
     updateLogs();
     updatePlayer();
     checkCollision();
+    checkPowerUpCollision();
 
-    if (isFirstPerson) {
-        // First-person: Keep camera inside player, looking forward
-        camera.position.set(cube.position.x, cube.position.y, cube.position.z);
-        camera.lookAt(cube.position.x, cube.position.y + 0.8, cube.position.z - 5); 
-    } else {
-        // Third-person: Keep camera behind and above the player
-        camera.position.set(cube.position.x, cube.position.y + 1.5, cube.position.z + 4);
-        camera.lookAt(cube.position.x, cube.position.y + 1, cube.position.z);
+    // if (isFirstPerson) {
+    //     // First-person: Keep camera inside player, looking forward
+    //     camera.position.set(cube.position.x, cube.position.y, cube.position.z);
+    //     camera.lookAt(cube.position.x, cube.position.y + 0.8, cube.position.z - 5); 
+    // } else {
+    //     // Third-person: Keep camera behind and above the player
+    //     camera.position.set(cube.position.x, cube.position.y + 1.5, cube.position.z + 4);
+    //     camera.lookAt(cube.position.x, cube.position.y + 1, cube.position.z);
+    // }
+
+    if (frog) {
+        updateDayNightCycle();
+        updateLogs();
+        updatePlayer();
+        checkCollision();
+        if (isFirstPerson) {
+            camera.position.set(frog.position.x, frog.position.y, frog.position.z);
+            camera.lookAt(frog.position.x, frog.position.y, frog.position.z - 5);
+        } else {
+            camera.position.set(frog.position.x + 1.35, frog.position.y + 1.5, frog.position.z + 4);
+            camera.lookAt(frog.position.x + 1.35, frog.position.y + 1, frog.position.z);
+        }
     }
 
     renderer.render(scene, camera);
@@ -422,4 +748,4 @@ function animate() {
 animate();
 startSpawningLogs(); // Start log spawning when game begins
 startTimer(); // Start the timer when the game begins
-
+spawnPowerUps(); //start spawing the powerups 
