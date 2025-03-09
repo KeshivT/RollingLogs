@@ -634,7 +634,16 @@ function resetPowerUps() {
     maxSpeed = 0.05; // Reset speed boost
     defaultJumpPower = 0.13; // Reset jump boost
     isInvincible = false; // Remove shield effect
-    cube.material.opacity = 1; // Reset player visibility
+
+    // Reset player opacity (fix for frog model)
+    if (frog) {
+        frog.traverse((child) => {
+            if (child.isMesh && child.material) {
+                child.material.opacity = 1; // Reset opacity to normal
+            }
+        });
+    }
+
     hidePowerUpText(); // Hide the power-up text display
 }
 
@@ -666,6 +675,7 @@ function resetGame() {
 
     // Restart spawning
     startSpawningLogs();
+    resetPowerUps()
     spawnPowerUps();
     startTimer();
 }
@@ -682,7 +692,7 @@ function takeDamage() {
         });
 
         flashCount++;
-        if (flashCount > 10) { // Stop after a few flashes
+        if (flashCount > 6) { // Stop after a few flashes
             clearInterval(flashInterval);
             frog.traverse((child) => {
                 if (child.isMesh && child.material) {
