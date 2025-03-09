@@ -22,10 +22,19 @@ scene.background = new THREE.Color(0x87CEEB); // Sky blue
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
+ambientLight.castShadow = false;  // Ambient light should NOT cast shadows
 
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+directionalLight.shadow.mapSize.width = 4096; // Increase resolution for better quality
+directionalLight.shadow.mapSize.height = 4096;
+directionalLight.shadow.camera.left = -20;  
+directionalLight.shadow.camera.right = 20;  
+directionalLight.shadow.camera.top = 30;  // Increase top boundary
+directionalLight.shadow.camera.bottom = -30;  // Increase bottom boundary
+directionalLight.shadow.camera.far = 100; // Ensure shadows extend further
 directionalLight.position.set(5, 10, 5);
 scene.add(directionalLight);
+ambientLight.castShadow = false;  
 
 function createTree(x, z) {
     const trunkGeometry = new THREE.CylinderGeometry(0.3, 0.3, 2);
@@ -66,15 +75,15 @@ cube.receiveShadow = true;
 */
 ground.receiveShadow = true;
 
-const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
-const cubeMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-cube.castShadow = true;
-cube.receiveShadow = true;
-// scene.add(cube);
+// const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
+// const cubeMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+// const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+// cube.castShadow = true;
+// cube.receiveShadow = true;
+//  scene.add(cube);
 
-// Position the cube
-cube.position.y = -2; // Set ground level
+// // Position the cube
+// cube.position.y = -2; // Set ground level
 
 let isFirstPerson = false; // Track the camera mode
 
@@ -128,14 +137,9 @@ mtlLoader.load('Tree_frog.mtl', (materials) => {
             if (child.isMesh) {
                 console.log('Found mesh:', child);
 
-                // Now apply the transformations to the mesh
-                frog.scale.set(0.3, 0.3, 0.3);
-                frog.position.set(0, -2, 0);
-                frog.rotation.set(0, 2, 0);
-
                 // Enable shadows for the mesh
                 child.castShadow = true;
-                child.receiveShadow = true;
+                child.receiveShadow = false;
 
                 // Apply opacity if the material exists
                 if (child.material) {
@@ -144,6 +148,16 @@ mtlLoader.load('Tree_frog.mtl', (materials) => {
                 // You can also set material properties here if needed
             }
         });
+
+        // Now apply the transformations to the mesh
+        frog.scale.set(0.3, 0.3, 0.3);
+        let frogBox = new THREE.Box3().setFromObject(frog);
+        let frogCenter = frogBox.getCenter(new THREE.Vector3());
+    
+        if (frog) {
+            frog.position.set(0, -2, 0);
+        }
+        frog.rotation.set(0, 2, 0);
         scene.add(frog);
     });
 });
@@ -158,7 +172,7 @@ function createLog() {
     log.position.set(Math.random() * 20 - 10, -2, -8);
     log.rotation.z = Math.PI / 2;
     log.castShadow = true;
-    log.receiveShadow = true;
+    log.receiveShadow = false;
 
     // 35% chance to apply wobble
     log.isWobbling = Math.random() < 0.35;  
@@ -213,15 +227,6 @@ function updateLogs() {
         }
 
         // Remove logs that pass a certain point
-        // Apply subtle wobble if the log was marked to wobble
-        if (log.isWobbling) {
-            let wobbleAmount = Math.sin(log.position.z * log.wobbleSpeed + log.wobbleOffset) * log.wobbleIntensity;
-            
-            // Keep logs close to the ground without going under -2
-            log.position.y = -2 + Math.abs(wobbleAmount * 0.8); // Slight bounce effect
-        }
-
-        // Remove logs that pass a certain point
         if (log.position.z > 5) { 
             scene.remove(log);
             logs.splice(index, 1);
@@ -233,38 +238,50 @@ function updateLogs() {
 
 
 function createDustEffectJump() {
+    if (!frog) return;
+
+    // Compute the bounding box of the frog
+    let frogBox = new THREE.Box3().setFromObject(frog);
+    let center = frogBox.getCenter(new THREE.Vector3());
+    let size = frogBox.getSize(new THREE.Vector3());
+
     const dustGeometry = new THREE.SphereGeometry(0.2);
     const dustMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.5 });
     const dust = new THREE.Mesh(dustGeometry, dustMaterial);
     
-    // dust.position.set(cube.position.x, cube.position.y - 0.5, cube.position.z);
-    dust.position.set(frog.position.x, frog.position.y - 0.5, frog.position.z);
+    // Position dust at the correct center and below the frog slightly
+    dust.position.set(center.x, center.y - size.y / 2 - 0.1, center.z);
+
     scene.add(dust);
 
     setTimeout(() => scene.remove(dust), 500); // Remove after 0.5 sec
 }
 
+
 let lastDustTime = 0; 
 const dustInterval = 500; 
 
 function createDustEffect() {
-    const currentTime = Date.now();
-    
-    if (currentTime - lastDustTime < dustInterval) return; // Only spawn dust every second
+    if (!frog) return;
 
+    // Enforce cooldown between dust effects
+    const currentTime = Date.now();
+    if (currentTime - lastDustTime < dustInterval) return;
     lastDustTime = currentTime; // Update last spawn time
+
+    let frogBox = new THREE.Box3().setFromObject(frog);
+    let center = frogBox.getCenter(new THREE.Vector3());
 
     const dustGeometry = new THREE.SphereGeometry(0.2);
     const dustMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.5 });
     const dust = new THREE.Mesh(dustGeometry, dustMaterial);
     
-    // dust.position.set(cube.position.x, cube.position.y - 0.5, cube.position.z);
-    dust.position.set(frog.position.x, frog.position.y - 0.5, frog.position.z);
+    // Adjusted spawn position using the actual bounding box center
+    dust.position.set(center.x, center.y - frogBox.getSize(new THREE.Vector3()).y / 2 - 0.1, center.z);
+    
     scene.add(dust);
-
     setTimeout(() => scene.remove(dust), 500);
 }
-
 
 let playerVelocity = new THREE.Vector3(0, 0, 0);
 let playerAcceleration = 0.005;
@@ -293,11 +310,11 @@ let boostedJumpPower = 0.2;  // Boosted jump height
 function updatePlayer() {
     if (keys['ArrowLeft']) {
         playerVelocity.x = Math.max(playerVelocity.x - playerAcceleration, -maxSpeed);
-        if(cube.position.y === -2) createDustEffect(); 
+        if(frog.position.y === -2) createDustEffect(); 
     }
     if (keys['ArrowRight']) {
         playerVelocity.x = Math.min(playerVelocity.x + playerAcceleration, maxSpeed);
-        if(cube.position.y === -2) createDustEffect(); 
+        if(frog.position.y === -2) createDustEffect(); 
     }
 
     // if (keys[' '] && cube.position.y === -2) {
@@ -340,13 +357,14 @@ function updatePlayer() {
         }
 
         if (frog.position.x < -8) { 
-            cube.position.x = 8;
+            frog.position.x = 8;
         }
 
         if (frog.position.x > 8) { 
-            cube.position.x = -8;
+            frog.position.x = -8;
         }
     }
+    
 }
 
 let lives = 3; // Number of lives
@@ -437,6 +455,7 @@ sunLight.shadow.camera.right = 20;
 sunLight.shadow.camera.top = 20;
 sunLight.shadow.camera.bottom = -20;
 scene.add(sunLight);
+scene.remove(directionalLight);  // If `directionalLight` is the extra one
 
 const sunGeometry = new THREE.SphereGeometry(2);
 const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
@@ -473,6 +492,7 @@ function updateDayNightCycle() {
     let intensity = Math.max(0.1, Math.sin(timeOfDay)); // Brighter during the day
     sunLight.intensity = intensity * 1.5;
     sunLight.color.setHSL(0.1, 0.5, 0.5 + intensity * 0.5);
+    sunLight.castShadow = true; 
     
     // Adjust sky color
     let skyFactor = (Math.sin(timeOfDay) + 1) / 2; // Normalized 0 to 1
@@ -580,10 +600,8 @@ function applyPowerUpEffect() {
     else if (effectType === 1) {
         powerUpText = "🛡️";
         isInvincible = true;
-        cube.material.opacity = 0.5; // Visual feedback
         setTimeout(() => { 
             isInvincible = false;
-            cube.material.opacity = 1;
             hidePowerUpText();
         }, 5000);
     } 
@@ -621,32 +639,58 @@ function resetPowerUps() {
 }
 
 function resetGame() {
-    // Reset player position and velocity
-    // cube.position.set(0, -2, 0);
-    frog.position.set(0, -2, 0);
-    playerVelocity.set(0, 0, 0);
+    if (frog) {
+        frog.position.set(0, -2, 0);
+    }
 
-    // Reset log properties
-    logSpeed = 0.03; 
-    spawnRate = initialSpawnRate; 
-    lives = 3; // Reset lives
+    playerVelocity.set(0, 0, 0); // **Fully reset velocity**
+    keys['ArrowLeft'] = false;
+    keys['ArrowRight'] = false;
+    keys[' '] = false; // Prevent jump carry-over
+
+    logSpeed = 0.03;
+    spawnRate = initialSpawnRate;
+    lives = 3;
     updateLivesDisplay();
 
-     // Reset all active power-ups
-    resetPowerUps();
+    // **Remove all logs**
+    logs.forEach(log => scene.remove(log));
+    logs = [];  // Clear the logs array
 
-    // Remove all logs
-    logs.forEach((log) => scene.remove(log));
-    logs = [];
+    // **Remove all power-ups**
+    powerUps.forEach(powerUp => scene.remove(powerUp));
+    powerUps = [];  // Clear the powerUps array
 
-    // Clear previous log spawn interval
+    // **Clear any active intervals**
     clearTimeout(logSpawnInterval);
 
-    // Restart spawning logs
+    // Restart spawning
     startSpawningLogs();
-
-    // Restart the timer
+    spawnPowerUps();
     startTimer();
+}
+
+function takeDamage() {
+    if (!frog) return;
+
+    let flashCount = 0;
+    const flashInterval = setInterval(() => {
+        frog.traverse((child) => {
+            if (child.isMesh && child.material) {
+                child.material.color.setHex(flashCount % 2 === 0 ? 0xff0000 : 0xffffff); // Toggle between red and white
+            }
+        });
+
+        flashCount++;
+        if (flashCount > 10) { // Stop after a few flashes
+            clearInterval(flashInterval);
+            frog.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    child.material.color.setHex(0xffffff); // Reset to original color
+                }
+            });
+        }
+    }, 200); // Flash every 20ms
 }
 
 function checkCollision() {
@@ -654,11 +698,10 @@ function checkCollision() {
 
     if (frog) {
         // Create a bounding box for the entire frog group
-        const frogBox = new THREE.Box3().setFromObject(frog);  // Bounding box around the frog group
-
-        // Get the center and size of the box
-        const center = frogBox.getCenter(new THREE.Vector3());
-        const frogSphere = new THREE.Sphere(center, 0.4);
+        let frogBox = new THREE.Box3().setFromObject(frog);
+        let frogCenter = frogBox.getCenter(new THREE.Vector3());
+    
+        let frogSphere = new THREE.Sphere(frogCenter, frogBox.getSize(new THREE.Vector3()).x / 3);  // Proportional radius
 
         // // Create a wireframe cube at the center of the frog's bounding box
         // const geometry = new THREE.SphereGeometry(0.4, 32, 32);  // Cube size based on frog's bounding box
@@ -683,6 +726,7 @@ function checkCollision() {
             if (frogSphere.intersectsBox(logBox)) {  // Check for collision between frog and log
                 lives -= 1;
                 updateLivesDisplay();
+                takeDamage(); 
 
                 if (lives <= 0) {
                     console.log("Game Over!");
