@@ -213,6 +213,15 @@ function updateLogs() {
         }
 
         // Remove logs that pass a certain point
+        // Apply subtle wobble if the log was marked to wobble
+        if (log.isWobbling) {
+            let wobbleAmount = Math.sin(log.position.z * log.wobbleSpeed + log.wobbleOffset) * log.wobbleIntensity;
+            
+            // Keep logs close to the ground without going under -2
+            log.position.y = -2 + Math.abs(wobbleAmount * 0.8); // Slight bounce effect
+        }
+
+        // Remove logs that pass a certain point
         if (log.position.z > 5) { 
             scene.remove(log);
             logs.splice(index, 1);
