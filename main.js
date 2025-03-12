@@ -190,8 +190,8 @@ function createLog() {
 let logs = [];
 
 // Log movement speed
-let logSpeed = 0.03; 
-let speedIncreaseRate = 0.00005; 
+let logSpeed = 0.003; 
+let speedIncreaseRate = 0.000005; 
 
 // Log spawn rate variables
 let initialSpawnRate = 2000; // Start spawning every 2 seconds
@@ -284,7 +284,7 @@ function createDustEffect() {
 }
 
 let playerVelocity = new THREE.Vector3(0, 0, 0);
-let playerAcceleration = 0.005;
+let playerAcceleration = 0.0025;
 let friction = 0.005;
 let maxSpeed = 0.05;
 
@@ -304,8 +304,8 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
-let defaultJumpPower = 0.13; // Store default jump height
-let boostedJumpPower = 0.2;  // Boosted jump height
+let defaultJumpPower = 0.2; // Store default jump height
+let boostedJumpPower = 0.25;  // Boosted jump height
 
 function updatePlayer() {
     if (keys['ArrowLeft']) {
@@ -327,7 +327,7 @@ function updatePlayer() {
         createDustEffectJump(); 
     }
 
-    playerVelocity.y -= 0.0035;
+    playerVelocity.y -= 0.0025;
 
     if (!keys['ArrowLeft'] && !keys['ArrowRight']) {
         playerVelocity.x *= 1 - friction;
@@ -356,12 +356,12 @@ function updatePlayer() {
             playerVelocity.y = 0;
         }
 
-        if (frog.position.x < -8) { 
+        if (frog.position.x < -10) { 
             frog.position.x = 8;
         }
 
         if (frog.position.x > 8) { 
-            frog.position.x = -8;
+            frog.position.x = -10;
         }
     }
     
@@ -468,7 +468,7 @@ const moon = new THREE.Mesh(moonGeometry, moonMaterial);
 scene.add(moon);
 
 let timeOfDay = 0; 
-const cycleSpeed = 0.002; 
+const cycleSpeed = 0.0002; 
 
 function updateDayNightCycle() {
     timeOfDay += cycleSpeed;
@@ -548,7 +548,7 @@ function spawnPowerUps() {
                 powerUps = powerUps.filter(p => p !== newPowerUp);
             }, 3000);
         }
-    }, 10000); 
+    }, 25000); 
 }
 
 function checkPowerUpCollision() {
