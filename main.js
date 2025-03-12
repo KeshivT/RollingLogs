@@ -155,7 +155,7 @@ mtlLoader.load('Tree_frog.mtl', (materials) => {
         let frogCenter = frogBox.getCenter(new THREE.Vector3());
     
         if (frog) {
-            frog.position.set(0, -2, 0);
+            frog.position.set(0, -2.21, 0);
         }
         frog.rotation.set(0, 2, 0);
         scene.add(frog);
@@ -322,7 +322,7 @@ function updatePlayer() {
     //     createDustEffectJump(); 
     // }
 
-    if (keys[' '] && frog.position.y === -2) {
+    if (keys[' '] && frog.position.y === -2.21) {
         playerVelocity.y = defaultJumpPower;
         createDustEffectJump(); 
     }
@@ -351,8 +351,8 @@ function updatePlayer() {
     if(frog){
         frog.position.add(playerVelocity);
 
-        if (frog.position.y < -2) {
-            frog.position.y = -2;
+        if (frog.position.y < -2.21) {
+            frog.position.y = -2.21;
             playerVelocity.y = 0;
         }
 
