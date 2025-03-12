@@ -647,16 +647,72 @@ function resetPowerUps() {
     hidePowerUpText(); // Hide the power-up text display
 }
 
+const gameOverScreen = document.createElement("div");
+gameOverScreen.style.position = "absolute";
+gameOverScreen.style.top = "50%";
+gameOverScreen.style.left = "50%";
+gameOverScreen.style.transform = "translate(-50%, -50%)"; // Center align
+gameOverScreen.style.fontSize = "32px";
+gameOverScreen.style.fontWeight = "bold";
+gameOverScreen.style.color = "white";
+gameOverScreen.style.background = "rgba(0, 0, 0, 0.8)"; // Darker background
+gameOverScreen.style.padding = "30px";
+gameOverScreen.style.borderRadius = "10px";
+gameOverScreen.style.textAlign = "center";
+gameOverScreen.style.display = "none"; // Hidden by default
+
+// Score text
+const finalScore = document.createElement("span");
+finalScore.id = "finalScore";
+gameOverScreen.appendChild(finalScore);
+
+// Line break
+gameOverScreen.appendChild(document.createElement("br"));
+
+// Restart button
+const restartButton = document.createElement("button");
+restartButton.innerText = "Restart";
+restartButton.style.fontSize = "20px";
+restartButton.style.padding = "10px 20px";
+restartButton.style.marginTop = "15px";
+restartButton.style.cursor = "pointer";
+restartButton.onclick = resetGame;
+
+gameOverScreen.appendChild(restartButton);
+
+// Add to document
+document.body.appendChild(gameOverScreen);
+
+restartButton.onmouseover = () => {
+    restartButton.style.background = "#dddd";
+};
+restartButton.onmouseleave = () => {
+    restartButton.style.background = "#ffffff";
+};
+
+// Function to show Game Over screen
+function showGameOverScreen() {
+    finalScore.innerText = `You survived for ${timeElapsed.toFixed(1)} seconds.`;
+    gameOverScreen.style.display = "block";
+    
+    isGameOver = true; // Stop the game loop
+    clearTimeout(logSpawnInterval); // Stop spawning logs
+    clearInterval(timerInterval); // Stop the timer
+}
+
 function resetGame() {
     if (frog) {
         frog.position.set(0, -2, 0);
     }
+
+    gameOverScreen.style.display = "none"; 
 
     playerVelocity.set(0, 0, 0); // **Fully reset velocity**
     keys['ArrowLeft'] = false;
     keys['ArrowRight'] = false;
     keys[' '] = false; // Prevent jump carry-over
 
+    isGameOver = false;
     logSpeed = 0.03;
     spawnRate = initialSpawnRate;
     lives = 3;
@@ -678,6 +734,7 @@ function resetGame() {
     resetPowerUps()
     spawnPowerUps();
     startTimer();
+    animate(); // Restart game loop
 }
 
 function takeDamage() {
@@ -687,7 +744,7 @@ function takeDamage() {
     const flashInterval = setInterval(() => {
         frog.traverse((child) => {
             if (child.isMesh && child.material) {
-                child.material.color.setHex(flashCount % 2 === 0 ? 0xff0000 : 0xffffff); // Toggle between red and white
+                child.material.color.setHex(flashCount % 2 === 0 ? 0xff0020 : 0xffffff); // Toggle between red and white
             }
         });
 
@@ -739,9 +796,7 @@ function checkCollision() {
                 takeDamage(); 
 
                 if (lives <= 0) {
-                    console.log("Game Over!");
-                    alert(`Game Over! You survived for ${timeElapsed.toFixed(1)} seconds. Press OK to restart.`);
-                    resetGame();
+                    showGameOverScreen();
                 } else {
                     startInvincibility();  // Trigger invincibility period
                 }
@@ -773,7 +828,11 @@ function checkCollision() {
 //     });
 // }
 
+let isGameOver = false
+
 function animate() {
+    if (isGameOver) return; // Stop the game loop when the player dies
+
     requestAnimationFrame(animate);
     updateDayNightCycle();
     updateLogs();
