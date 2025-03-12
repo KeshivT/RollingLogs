@@ -190,8 +190,8 @@ function createLog() {
 let logs = [];
 
 // Log movement speed
-let logSpeed = 0.003; 
-let speedIncreaseRate = 0.000005; 
+let logSpeed = 0.001; 
+let speedIncreaseRate = 0.00005; 
 
 // Log spawn rate variables
 let initialSpawnRate = 2000; // Start spawning every 2 seconds
@@ -304,7 +304,7 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
-let defaultJumpPower = 0.2; // Store default jump height
+let defaultJumpPower = 0.13; // Store default jump height
 let boostedJumpPower = 0.25;  // Boosted jump height
 
 function updatePlayer() {
@@ -548,7 +548,7 @@ function spawnPowerUps() {
                 powerUps = powerUps.filter(p => p !== newPowerUp);
             }, 3000);
         }
-    }, 25000); 
+    }, 15000); 
 }
 
 function checkPowerUpCollision() {
@@ -713,7 +713,7 @@ function resetGame() {
     keys[' '] = false; // Prevent jump carry-over
 
     isGameOver = false;
-    logSpeed = 0.03;
+    logSpeed = 0.001;
     spawnRate = initialSpawnRate;
     lives = 3;
     updateLivesDisplay();
