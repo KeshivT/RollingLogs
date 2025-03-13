@@ -178,7 +178,7 @@ function createLog() {
     log.isWobbling = Math.random() < 0.35;  
     if (log.isWobbling) {
         log.wobbleOffset = Math.random() * Math.PI * 2; // Unique offset for independent motion
-        log.wobbleIntensity = Math.random() * 0.3 + 0.2; // Subtle wobble (0.2 to 0.5)
+        log.wobbleIntensity = Math.random() * 0.35 + 0.25; // Subtle wobble (0.2 to 0.5)
         log.wobbleSpeed = Math.random() * 1 + 0.5; // Slow and smooth movement (0.5 to 1.5)
     }    
 
@@ -191,7 +191,7 @@ let logs = [];
 
 // Log movement speed
 let logSpeed = 0.001; 
-let speedIncreaseRate = 0.00005; 
+let speedIncreaseRate = 0.00002; 
 
 // Log spawn rate variables
 let initialSpawnRate = 2000; // Start spawning every 2 seconds
@@ -305,7 +305,7 @@ document.addEventListener('keydown', (event) => {
 });
 
 let defaultJumpPower = 0.13; // Store default jump height
-let boostedJumpPower = 0.25;  // Boosted jump height
+let boostedJumpPower = 0.18;  // Boosted jump height
 
 function updatePlayer() {
     if (keys['ArrowLeft']) {
@@ -468,7 +468,7 @@ const moon = new THREE.Mesh(moonGeometry, moonMaterial);
 scene.add(moon);
 
 let timeOfDay = 0; 
-const cycleSpeed = 0.0002; 
+const cycleSpeed = 0.0003; 
 
 function updateDayNightCycle() {
     timeOfDay += cycleSpeed;
@@ -537,18 +537,25 @@ function createPowerUp() {
 let powerUps = [];
 
 function spawnPowerUps() {
-    setInterval(() => {
-        if (powerUps.length < 3) {  // Limit active power-ups
+    // Wait some time before spawning the next power-up
+    setTimeout(() => {
+        if (powerUps.length === 0) {  // Ensure no power-up is active before spawning a new one
             let newPowerUp = createPowerUp();
             powerUps.push(newPowerUp);
 
-            // Remove power-up after 3 seconds if not collected
+            // Remove the power-up after a few seconds
             setTimeout(() => {
                 scene.remove(newPowerUp);
                 powerUps = powerUps.filter(p => p !== newPowerUp);
-            }, 3000);
+
+                // Spawn the next power-up only after the previous one is removed
+                spawnPowerUps();
+            }, 5000); // Power-up exists for 5 seconds before being removed
+        } else {
+            // If a power-up is still active, wait a bit longer before trying again
+            spawnPowerUps();
         }
-    }, 15000); 
+    }, Math.random() * (15000 - 12000) + 12000); // Random delay between 12-15 seconds
 }
 
 function checkPowerUpCollision() {
@@ -590,9 +597,9 @@ function applyPowerUpEffect() {
 
     if (effectType === 0) {
         powerUpText = "🏃‍♂️💨";
-        maxSpeed *= 1.3;
+        maxSpeed *= 1.5;
         setTimeout(() => { 
-            maxSpeed /= 1.3; 
+            maxSpeed /= 1.5; 
             hidePowerUpText();
         }, 5000);
     } 
