@@ -10,6 +10,7 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
+// Create ground
 const groundGeometry = new THREE.PlaneGeometry(20, 300);
 const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
 const ground = new THREE.Mesh(groundGeometry, groundMaterial);
@@ -18,6 +19,7 @@ ground.position.y = -2.5;
 ground.receiveShadow = true;
 scene.add(ground);
 
+// Background
 scene.background = new THREE.Color(0x87CEEB); // Sky blue
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -36,6 +38,7 @@ directionalLight.position.set(5, 10, 5);
 scene.add(directionalLight);
 ambientLight.castShadow = false;  
 
+// Tree
 function createTree(x, z) {
     const trunkGeometry = new THREE.CylinderGeometry(0.3, 0.3, 2);
     const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
@@ -55,6 +58,7 @@ function createTree(x, z) {
     scene.add(leaves);
 }
 
+// Spawn trees throughout scene
 for (let i = -10; i <= 10; i += 3) {
     createTree(i, -9);
     createTree(i, -15);
@@ -69,38 +73,15 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 directionalLight.castShadow = true;
-/*
-cube.castShadow = true;
-cube.receiveShadow = true;
-*/
 ground.receiveShadow = true;
-
-// const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
-// const cubeMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-// const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-// cube.castShadow = true;
-// cube.receiveShadow = true;
-//  scene.add(cube);
-
-// // Position the cube
-// cube.position.y = -2; // Set ground level
 
 let isFirstPerson = false; // Track the camera mode
 
 camera.position.set(0, -2, 0);
 
+// Switch from 3rd person to 1st person and back
 function toggleCamera() {
     isFirstPerson = !isFirstPerson;
-
-    // if (isFirstPerson) {
-    //     // First-Person View: Camera follows the player
-    //     camera.position.set(cube.position.x, cube.position.y + 0.8, cube.position.z);
-    //     camera.lookAt(cube.position.x, cube.position.y + 0.8, cube.position.z - 5);
-    // } else {
-    //     // Third-Person View: Fixed camera position
-    //     camera.position.set(0, 8, 10);  // High and behind the scene
-    //     camera.lookAt(0, 0, 0);  // Look at the center of the world
-    // }
 
     if (isFirstPerson) {
         // First-person: Keep camera inside frog, looking forward
@@ -162,6 +143,7 @@ mtlLoader.load('Tree_frog.mtl', (materials) => {
     });
 });
 
+// Make logs with texture, rotation, and wobble
 const logTexture = textureLoader.load('log_texture.jpg');
 
 function createLog() {
@@ -236,7 +218,7 @@ function updateLogs() {
     logSpeed += speedIncreaseRate; 
 }
 
-
+// When frog jumps, small puff of dust produced at feet
 function createDustEffectJump() {
     if (!frog) return;
 
@@ -283,6 +265,7 @@ function createDustEffect() {
     setTimeout(() => scene.remove(dust), 500);
 }
 
+// Set player main physics parameters
 let playerVelocity = new THREE.Vector3(0, 0, 0);
 let playerAcceleration = 0.0025;
 let friction = 0.005;
@@ -317,11 +300,6 @@ function updatePlayer() {
         if(frog.position.y === -2) createDustEffect(); 
     }
 
-    // if (keys[' '] && cube.position.y === -2) {
-    //     playerVelocity.y = defaultJumpPower;
-    //     createDustEffectJump(); 
-    // }
-
     if (keys[' '] && frog.position.y === -2.21) {
         playerVelocity.y = defaultJumpPower;
         createDustEffectJump(); 
@@ -332,21 +310,6 @@ function updatePlayer() {
     if (!keys['ArrowLeft'] && !keys['ArrowRight']) {
         playerVelocity.x *= 1 - friction;
     }
-
-    // cube.position.add(playerVelocity);
-
-    // if (cube.position.y < -2) {
-    //     cube.position.y = -2;
-    //     playerVelocity.y = 0;
-    // }
-
-    // if (cube.position.x < -8) { 
-    //     cube.position.x = 8;
-    // }
-
-    // if (cube.position.x > 8) { 
-    //     cube.position.x = -8;
-    // }
 
     if(frog){
         frog.position.add(playerVelocity);
@@ -407,13 +370,6 @@ function updateLivesDisplay() {
 }
 
 function startInvincibility() {
-    // isInvincible = true;
-    // cube.material.opacity = 0.5; // Make player semi-transparent
-    // setTimeout(() => {
-    //     isInvincible = false;
-    //     cube.material.opacity = 1; // Reset player visibility
-    // }, 1500); // 1.5 sec grace period
-
     if (frog) {
         isInvincible = true;
     
@@ -470,6 +426,7 @@ scene.add(moon);
 let timeOfDay = 0; 
 const cycleSpeed = 0.0003; 
 
+// Day and Night cycle
 function updateDayNightCycle() {
     timeOfDay += cycleSpeed;
     if (timeOfDay > Math.PI * 2) timeOfDay = 0;
@@ -559,18 +516,6 @@ function spawnPowerUps() {
 }
 
 function checkPowerUpCollision() {
-    // const cubeBox = new THREE.Box3().setFromObject(cube);
-
-    // powerUps.forEach((powerUp, index) => {
-    //     const powerUpBox = new THREE.Box3().setFromObject(powerUp);
-
-    //     if (cubeBox.intersectsBox(powerUpBox)) {
-    //         applyPowerUpEffect();
-    //         scene.remove(powerUp);
-    //         powerUps.splice(index, 1);
-    //     }
-    // });
-
     if (frog) {
         // Create a bounding box for the entire frog group
         const frogBox = new THREE.Box3().setFromObject(frog);  // Bounding box around the frog group
@@ -744,6 +689,7 @@ function resetGame() {
     animate(); // Restart game loop
 }
 
+// Handles frog getting hit by log
 function takeDamage() {
     if (!frog) return;
 
@@ -777,22 +723,6 @@ function checkCollision() {
     
         let frogSphere = new THREE.Sphere(frogCenter, frogBox.getSize(new THREE.Vector3()).x / 3);  // Proportional radius
 
-        // // Create a wireframe cube at the center of the frog's bounding box
-        // const geometry = new THREE.SphereGeometry(0.4, 32, 32);  // Cube size based on frog's bounding box
-        // const material = new THREE.LineBasicMaterial({ color: 0xffff00 });  // Yellow wireframe color
-        // const wireframe = new THREE.LineSegments(new THREE.WireframeGeometry(geometry), material);
-
-        // // Position the wireframe sphere at the center of the frog
-        // wireframe.position.set(center.x, center.y, center.z);
-
-        // // Add the wireframe to the scene
-        // scene.add(wireframe);
-
-        // // Optional: Remove the wireframe after a short duration for debugging purposes
-        // setTimeout(() => {
-        //     scene.remove(wireframe);
-        // }, 1000);  // Remove wireframe after 1 second
-
         // Check for collisions with logs
         logs.forEach((log) => {
             const logBox = new THREE.Box3().setFromObject(log);  // Get bounding box for the log
@@ -812,29 +742,6 @@ function checkCollision() {
     }
 }
 
-// function checkCollision() {
-//     if (isInvincible) return; // If in grace period, ignore collisions
-
-//     const cubeBox = new THREE.Box3().setFromObject(cube);
-
-//     logs.forEach((log) => {
-//         const logBox = new THREE.Box3().setFromObject(log);
-
-//         if (cubeBox.intersectsBox(logBox)) {
-//             lives -= 1;
-//             updateLivesDisplay();
-
-//             if (lives <= 0) {
-//                 console.log("Game Over!");
-//                 alert(`Game Over! You survived for ${timeElapsed.toFixed(1)} seconds. Press OK to restart.`);
-//                 resetGame();
-//             } else {
-//                 startInvincibility(); 
-//             }
-//         }
-//     });
-// }
-
 let isGameOver = false
 
 function animate() {
@@ -846,16 +753,6 @@ function animate() {
     updatePlayer();
     checkCollision();
     checkPowerUpCollision();
-
-    // if (isFirstPerson) {
-    //     // First-person: Keep camera inside player, looking forward
-    //     camera.position.set(cube.position.x, cube.position.y, cube.position.z);
-    //     camera.lookAt(cube.position.x, cube.position.y + 0.8, cube.position.z - 5); 
-    // } else {
-    //     // Third-person: Keep camera behind and above the player
-    //     camera.position.set(cube.position.x, cube.position.y + 1.5, cube.position.z + 4);
-    //     camera.lookAt(cube.position.x, cube.position.y + 1, cube.position.z);
-    // }
 
     if (frog) {
         updateDayNightCycle();
