@@ -4,7 +4,7 @@ Rolling logs is a game in which the player has to dodge logs rolling towards the
 
 It involves collision detection, object rendering, and computer graphics.
 
-This is a Winter 2025 CS174A project by Keshiv Tandon ([KeshivT](https://github.com/KeshivT)), Shuma (), and Philemon ().
+This is a Winter 2025 CS174A project by Keshiv Tandon, Shuma Jensen, and Philemon Chan.
 
 ## Features
 **Theme**
@@ -35,7 +35,7 @@ Logs use translation, rotation, and scaling to move closer to the player, roll, 
 
 
 **Character**
-- The main character will be a green cube
+- The main character will be a green frog
 - It can jump and strafe left and right, which is all translation
 - It does not jump high so jump physics will be very basic
 
@@ -44,5 +44,16 @@ Logs use translation, rotation, and scaling to move closer to the player, roll, 
 - If the character collides with any log, the game will end
 - Use AABB collision detection - simple and cost-effective
 - Other features
-- Randomly generated logs?
-- Speed up as game progresses?
+- Randomly generated logs
+- Speed up as game progresses
+
+**POV**
+- The player can switch from 3rd to 1st person POV with the shift key
+
+**Power Ups**
+- Player can collect orbs which grant temporary power-ups
+- Jump boost, shield, speed boost, healing
+
+**Shadows**
+- Each object has shadows
+- The world has a day-night cycle, which the shadows follow
